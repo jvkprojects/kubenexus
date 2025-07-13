@@ -1,0 +1,3856 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>KubeNexus Enterprise - Kubernetes Control Plane</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a0ca3;
+      --primary-light: #4895ef;
+      --secondary: #3f37c9;
+      --accent: #4cc9f0;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --error: #f44336;
+      --info: #2196f3;
+      
+      --background: #0f172a;
+      --surface: #1e293b;
+      --surface-light: #334155;
+      --surface-dark: #0f172a;
+      --text: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-disabled: #64748b;
+      --border: rgba(255,255,255,0.1);
+      --divider: rgba(255,255,255,0.12);
+      
+      --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      --elevation-1: 0 1px 3px rgba(0,0,0,0.12);
+      --elevation-2: 0 4px 6px rgba(0,0,0,0.1);
+      --elevation-3: 0 10px 15px rgba(0,0,0,0.1);
+    }
+
+    [data-theme="light"] {
+      --background: #f8fafc;
+      --surface: #ffffff;
+      --surface-light: #f1f5f9;
+      --surface-dark: #e2e8f0;
+      --text: #0f172a;
+      --text-secondary: #64748b;
+      --text-disabled: #94a3b8;
+      --border: rgba(0,0,0,0.1);
+      --divider: rgba(0,0,0,0.12);
+      
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --elevation-1: 0 1px 2px rgba(0,0,0,0.08);
+      --elevation-2: 0 2px 4px rgba(0,0,0,0.08);
+      --elevation-3: 0 4px 6px rgba(0,0,0,0.08);
+    }
+
+    body {
+      background: var(--background);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* Layout */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 10;
+    }
+    
+    .sidebar-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      white-space: nowrap;
+    }
+    
+    .sidebar-title i {
+      font-size: 1.5rem;
+    }
+    
+    .sidebar-group {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .group-header {
+      padding: 0.5rem 1.5rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      gap: 0.75rem;
+      color: var(--text-secondary);
+      border-left: 3px solid transparent;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    
+    .nav-item:hover {
+      background: var(--surface-light);
+      color: var(--text);
+    }
+    
+    .nav-item.active {
+      background: rgba(67, 97, 238, 0.15);
+      border-left: 3px solid var(--primary);
+      color: var(--primary);
+    }
+    
+    .nav-item i {
+      width: 24px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    
+    /* Top Bar */
+    .top-bar {
+      height: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      box-shadow: var(--elevation-1);
+    }
+    
+    .cluster-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+    }
+    
+    .cluster-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+    }
+    
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .notification-badge {
+      position: relative;
+    }
+    
+    .notification-badge .badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+    
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+    }
+    
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .view-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      background: var(--background);
+    }
+    
+    /* Dashboard */
+    .dashboard-section {
+      margin-bottom: 2rem;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .dashboard-card {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      box-shadow: var(--card-shadow);
+    }
+    
+    .dashboard-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--elevation-3);
+    }
+    
+    .card-title {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .card-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    
+    .card-value.text-danger {
+      color: var(--error);
+    }
+    
+    .card-value.text-warning {
+      color: var(--warning);
+    }
+    
+    /* Resource Table */
+    .resource-table-container {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2rem;
+    }
+    
+    .table-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .table-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    
+    .resource-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .resource-table th {
+      text-align: left;
+      padding: 1rem 1.5rem;
+      background: var(--surface-light);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .resource-table td {
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    
+    .resource-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .resource-table tr:hover td {
+      background: var(--surface-light);
+    }
+    
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      gap: 0.5rem;
+    }
+    
+    .status-badge::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .status-running {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success);
+    }
+    
+    .status-running::before {
+      background: var(--success);
+    }
+    
+    .status-pending {
+      background: rgba(255, 152, 0, 0.15);
+      color: var(--warning);
+    }
+    
+    .status-pending::before {
+      background: var(--warning);
+    }
+    
+    .status-error {
+      background: rgba(244, 67, 54, 0.15);
+      color: var(--error);
+    }
+    
+    .status-error::before {
+      background: var(--error);
+    }
+    
+    /* Action Buttons */
+    .action-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+      background: var(--surface-light);
+      color: var(--text);
+    }
+    
+    .action-btn-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    /* Editor Containers */
+    .editor-container {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    
+    .editor-toolbar {
+      padding: 0.75rem 1rem;
+      background: var(--surface-light);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .editor-content {
+      padding: 1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--text);
+      white-space: pre;
+      overflow: auto;
+      max-height: 500px;
+    }
+    
+    /* Terminal */
+    .terminal-container {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    
+    .terminal-header {
+      padding: 0.75rem 1rem;
+      background: var(--surface-light);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .terminal-content {
+      padding: 1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #38bdf8;
+      background: #0f172a;
+      min-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .terminal-prompt {
+      color: #10b981;
+    }
+    
+    /* Log Viewer */
+    .log-viewer-container {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    
+    .log-viewer-header {
+      padding: 0.75rem 1rem;
+      background: var(--surface-light);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .log-viewer-content {
+      padding: 1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #38bdf8;
+      background: #0f172a;
+      min-height: 300px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    /* Right Panel */
+    .right-panel {
+      width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .panel-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 10;
+    }
+    
+    .panel-content {
+      padding: 1rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    /* Resource Graph */
+    .resource-graph {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 1rem;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Plugin Panel */
+    .plugin-panel {
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      box-shadow: var(--card-shadow);
+    }
+    
+    /* Form elements */
+    .form-control, .form-select {
+      background: var(--surface-light);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    
+    .form-control:focus, .form-select:focus {
+      background: var(--surface-light);
+      color: var(--text);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+    }
+    
+    /* Buttons */
+    .btn {
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--elevation-2);
+    }
+    
+    .btn-outline-primary {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .btn-outline-primary:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    
+    /* Badges */
+    .badge {
+      font-weight: 500;
+      padding: 0.35em 0.65em;
+    }
+    
+    /* Modal */
+    .modal-content {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .modal-header {
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .modal-footer {
+      border-top: 1px solid var(--border);
+    }
+    
+    /* Tabs */
+    .nav-tabs {
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .nav-tabs .nav-link {
+      color: var(--text-secondary);
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0;
+    }
+    
+    .nav-tabs .nav-link:hover {
+      border-color: transparent;
+      color: var(--text);
+    }
+    
+    .nav-tabs .nav-link.active {
+      color: var(--primary);
+      background: transparent;
+      border-bottom: 2px solid var(--primary);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .right-panel {
+        position: fixed;
+        right: 0;
+        top: 64px;
+        bottom: 0;
+        z-index: 100;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+      }
+    }
+    
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 80px;
+      }
+      .sidebar-title span,
+      .nav-item span,
+      .group-header {
+        display: none;
+      }
+      .nav-item {
+        justify-content: center;
+        padding: 0.75rem;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        z-index: 1000;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      .content-area {
+        margin-left: 0;
+      }
+      .dashboard-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .dashboard-cards {
+        grid-template-columns: 1fr;
+      }
+      .table-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .cluster-info {
+        font-size: 0.75rem;
+      }
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--surface-light);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-dark);
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+      display: inline-block;
+      width: 1.5rem;
+      height: 1.5rem;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Login Modal */
+    .auth-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+    
+    .auth-card {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90vw;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      overflow: hidden;
+      transform: translateY(0);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .auth-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    }
+    
+    .auth-header {
+      background: var(--primary);
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    
+    .auth-header i {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .auth-header h3 {
+      margin: 0;
+      font-weight: 600;
+    }
+    
+    .auth-body {
+      padding: 2rem;
+    }
+    
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--surface-light);
+    }
+    
+    .auth-tab {
+      flex: 1;
+      padding: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+    }
+    
+    .auth-tab.active {
+      background: var(--primary);
+      color: white;
+    }
+    
+    /* Fullscreen terminal */
+    .terminal-container.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2000;
+      border-radius: 0;
+      border: none;
+    }
+    
+    /* Spin animation for refresh icons */
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div class="auth-modal show">
+    <div class="auth-card">
+      <div class="auth-header">
+        <i class="bi bi-shield-lock"></i>
+        <h3>KubeNexus Enterprise</h3>
+      </div>
+      <div class="auth-body">
+        <div class="auth-tabs">
+          <div class="auth-tab active">SSO</div>
+          <div class="auth-tab">LDAP</div>
+          <div class="auth-tab">AD</div>
+        </div>
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" placeholder="Enter username" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" placeholder="Enter password" required>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="rememberMe">
+            <label class="form-check-label" for="rememberMe">Remember me</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" id="loginBtn">
+            <span class="btn-text">Login</span>
+            <span class="loading-spinner" style="display: none;"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main UI -->
+  <div class="app-container" style="display:none;">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          <i class="bi bi-cloud"></i>
+          <span>KubeNexus</span>
+        </div>
+      </div>
+      
+      <!-- Cluster Selector -->
+      <div class="sidebar-group">
+        <div class="group-header">Cluster</div>
+        <div class="nav-item">
+          <i class="bi bi-diagram-3"></i>
+          <select class="form-select form-select-sm bg-transparent border-0" id="clusterSelect">
+            <option>prod-cluster-1</option>
+            <option>dev-cluster-2</option>
+            <option>staging-cluster-3</option>
+          </select>
+        </div>
+        <div class="nav-item">
+          <i class="bi bi-folder"></i>
+          <select class="form-select form-select-sm bg-transparent border-0" id="namespaceSelect">
+            <option>All Namespaces</option>
+            <option>default</option>
+            <option>kube-system</option>
+            <option>dev</option>
+            <option>production</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Core Resources -->
+      <div class="sidebar-group">
+        <div class="group-header">Workloads</div>
+        <a href="#" class="nav-item active" data-view="dashboardView">
+          <i class="bi bi-speedometer2"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-view="podsView">
+          <i class="bi bi-box"></i>
+          <span>Pods</span>
+        </a>
+        <a href="#" class="nav-item" data-view="deploymentsView">
+          <i class="bi bi-cpu"></i>
+          <span>Deployments</span>
+        </a>
+        <a href="#" class="nav-item" data-view="statefulsetsView">
+          <i class="bi bi-database"></i>
+          <span>StatefulSets</span>
+        </a>
+        <a href="#" class="nav-item" data-view="daemonsetsView">
+          <i class="bi bi-hdd-stack"></i>
+          <span>DaemonSets</span>
+        </a>
+        <a href="#" class="nav-item" data-view="jobsView">
+          <i class="bi bi-hourglass"></i>
+          <span>Jobs</span>
+        </a>
+        <a href="#" class="nav-item" data-view="cronjobsView">
+          <i class="bi bi-clock-history"></i>
+          <span>CronJobs</span>
+        </a>
+      </div>
+      
+      <!-- Networking -->
+      <div class="sidebar-group">
+        <div class="group-header">Networking</div>
+        <a href="#" class="nav-item" data-view="servicesView">
+          <i class="bi bi-share"></i>
+          <span>Services</span>
+        </a>
+        <a href="#" class="nav-item" data-view="ingressesView">
+          <i class="bi bi-box-arrow-in-down"></i>
+          <span>Ingresses</span>
+        </a>
+        <a href="#" class="nav-item" data-view="networkPoliciesView">
+          <i class="bi bi-shield-lock"></i>
+          <span>Network Policies</span>
+        </a>
+        <a href="#" class="nav-item" data-view="endpointsView">
+          <i class="bi bi-plug"></i>
+          <span>Endpoints</span>
+        </a>
+      </div>
+      
+      <!-- Storage -->
+      <div class="sidebar-group">
+        <div class="group-header">Storage</div>
+        <a href="#" class="nav-item" data-view="persistentVolumesView">
+          <i class="bi bi-hdd"></i>
+          <span>Persistent Volumes</span>
+        </a>
+        <a href="#" class="nav-item" data-view="persistentVolumeClaimsView">
+          <i class="bi bi-folder"></i>
+          <span>PersistentVolumeClaims</span>
+        </a>
+        <a href="#" class="nav-item" data-view="storageClassesView">
+          <i class="bi bi-collection"></i>
+          <span>Storage Classes</span>
+        </a>
+      </div>
+      
+      <!-- Configuration -->
+      <div class="sidebar-group">
+        <div class="group-header">Configuration</div>
+        <a href="#" class="nav-item" data-view="configMapsView">
+          <i class="bi bi-file-text"></i>
+          <span>ConfigMaps</span>
+        </a>
+        <a href="#" class="nav-item" data-view="secretsView">
+          <i class="bi bi-key"></i>
+          <span>Secrets</span>
+        </a>
+        <a href="#" class="nav-item" data-view="serviceAccountsView">
+          <i class="bi bi-person"></i>
+          <span>Service Accounts</span>
+        </a>
+      </div>
+      
+      <!-- RBAC -->
+      <div class="sidebar-group">
+        <div class="group-header">RBAC</div>
+        <a href="#" class="nav-item" data-view="rolesView">
+          <i class="bi bi-person-check"></i>
+          <span>Roles</span>
+        </a>
+        <a href="#" class="nav-item" data-view="roleBindingsView">
+          <i class="bi bi-link"></i>
+          <span>Role Bindings</span>
+        </a>
+        <a href="#" class="nav-item" data-view="clusterRolesView">
+          <i class="bi bi-people"></i>
+          <span>Cluster Roles</span>
+        </a>
+        <a href="#" class="nav-item" data-view="clusterRoleBindingsView">
+          <i class="bi bi-link-45deg"></i>
+          <span>Cluster Role Bindings</span>
+        </a>
+      </div>
+      
+      <!-- Nodes -->
+      <div class="sidebar-group">
+        <div class="group-header">Nodes</div>
+        <a href="#" class="nav-item" data-view="nodesView">
+          <i class="bi bi-pc"></i>
+          <span>Nodes</span>
+        </a>
+        <a href="#" class="nav-item" data-view="nodeMetricsView">
+          <i class="bi bi-graph-up"></i>
+          <span>Node Metrics</span>
+        </a>
+      </div>
+      
+      <!-- Custom Resources -->
+      <div class="sidebar-group">
+        <div class="group-header">Custom Resources</div>
+        <a href="#" class="nav-item" data-view="crdsView">
+          <i class="bi bi-puzzle"></i>
+          <span>CRDs</span>
+        </a>
+        <a href="#" class="nav-item" data-view="operatorsView">
+          <i class="bi bi-gear"></i>
+          <span>Operators</span>
+        </a>
+      </div>
+      
+      <!-- Tools -->
+      <div class="sidebar-group">
+        <div class="group-header">Tools</div>
+        <a href="#" class="nav-item" data-view="terminalView">
+          <i class="bi bi-terminal"></i>
+          <span>Terminal</span>
+        </a>
+        <a href="#" class="nav-item" data-view="logsView">
+          <i class="bi bi-journal-text"></i>
+          <span>Logs</span>
+        </a>
+        <a href="#" class="nav-item" data-view="metricsView">
+          <i class="bi bi-graph-up"></i>
+          <span>Metrics</span>
+        </a>
+        <a href="#" class="nav-item" data-view="portForwardView">
+          <i class="bi bi-arrow-left-right"></i>
+          <span>Port Forwarding</span>
+        </a>
+      </div>
+      
+      <!-- Plugins -->
+      <div class="sidebar-group">
+        <div class="group-header">Plugins</div>
+        <a href="#" class="nav-item" data-view="securityScannerView">
+          <i class="bi bi-shield-check"></i>
+          <span>Security Scanner</span>
+        </a>
+        <a href="#" class="nav-item" data-view="backupView">
+          <i class="bi bi-archive"></i>
+          <span>Backup</span>
+        </a>
+      </div>
+      
+      <div class="sidebar-footer mt-auto p-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-muted small">Theme</span>
+          <span class="theme-toggle"><i class="bi bi-moon"></i></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="cluster-info">
+          <span class="cluster-status"></span>
+          <span class="fw-bold">Cluster:</span> <span id="currentCluster">prod-cluster-1</span>
+          <span class="mx-3 fw-bold">Namespace:</span> <span id="currentNamespace">default</span>
+        </div>
+        <div class="user-actions">
+          <button class="btn btn-sm btn-outline-secondary me-2">
+            <i class="bi bi-search"></i> Search
+          </button>
+          <button class="btn btn-sm btn-outline-secondary me-2 notification-badge">
+            <i class="bi bi-bell"></i>
+            <span class="badge bg-danger">3</span>
+          </button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+              <div class="user-avatar">A</div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Container -->
+      <div class="view-container">
+        <!-- Dashboard View -->
+        <div id="dashboardView">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-speedometer2"></i> Dashboard</h3>
+            <div>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshDashboard">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="dashboard-cards">
+            <div class="dashboard-card">
+              <div class="card-title">Namespaces</div>
+              <div class="card-value">12</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Pods</div>
+              <div class="card-value">142</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Deployments</div>
+              <div class="card-value">24</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Nodes</div>
+              <div class="card-value">8</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Alerts</div>
+              <div class="card-value text-danger">3</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">CPU Usage</div>
+              <div class="card-value">42%</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Memory Usage</div>
+              <div class="card-value">65%</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Storage</div>
+              <div class="card-value">1.2TB</div>
+            </div>
+          </div>
+          
+          <div class="dashboard-section">
+            <div class="section-header">
+              <h5>Resource Graph</h5>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" data-graph-type="pods">Pods</button>
+                <button class="btn btn-outline-secondary" data-graph-type="services">Services</button>
+                <button class="btn btn-outline-secondary" data-graph-type="network">Network</button>
+              </div>
+            </div>
+            <div class="resource-graph">
+              <div id="graphVisualization" style="width:100%;height:100%;"></div>
+            </div>
+          </div>
+          
+          <div class="dashboard-section">
+            <div class="section-header">
+              <h5>Recent Events</h5>
+              <button class="btn btn-sm btn-outline-secondary" id="viewAllEvents">View All</button>
+            </div>
+            <div class="resource-table-container">
+              <table class="table table-hover resource-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Object</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                  <tr>
+                    <td><span class="badge bg-info">Normal</span></td>
+                    <td>Created pod nginx-deployment-1234</td>
+                    <td>Pod/nginx-deployment-1234</td>
+                    <td>2 minutes ago</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge bg-info">Normal</span></td>
+                    <td>Started container nginx</td>
+                    <td>Pod/nginx-deployment-1234</td>
+                    <td>2 minutes ago</td>
+                  </tr>
+                  <tr>
+                    <td><span class="badge bg-warning">Warning</span></td>
+                    <td>Failed to pull image</td>
+                    <td>Pod/payment-service-5678</td>
+                    <td>15 minutes ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Pods View -->
+        <div id="podsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-box"></i> Pods</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createPodModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshPods">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active">All</button>
+                <button class="btn btn-outline-secondary">Running</button>
+                <button class="btn btn-outline-secondary">Pending</button>
+                <button class="btn btn-outline-secondary">Failed</button>
+              </div>
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter pods..." id="podFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Ready</th>
+                  <th>Restarts</th>
+                  <th>Age</th>
+                  <th>Node</th>
+                  <th>IP</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="podsTableBody">
+                <tr>
+                  <td>nginx-deployment-1234</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>1/1</td>
+                  <td>0</td>
+                  <td>2d</td>
+                  <td>node-1</td>
+                  <td>10.244.1.2</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML" data-bs-toggle="modal" data-bs-target="#yamlModal">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs" data-pod="nginx-deployment-1234">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                      <button class="action-btn" title="Terminal" data-pod="nginx-deployment-1234">
+                        <i class="bi bi-terminal"></i>
+                      </button>
+                      <button class="action-btn" title="Delete" data-pod="nginx-deployment-1234">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>redis-master-0</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>1/1</td>
+                  <td>0</td>
+                  <td>5d</td>
+                  <td>node-2</td>
+                  <td>10.244.2.3</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                      <button class="action-btn" title="Terminal">
+                        <i class="bi bi-terminal"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>filebeat-abc12</td>
+                  <td>kube-system</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>1/1</td>
+                  <td>2</td>
+                  <td>1w</td>
+                  <td>node-3</td>
+                  <td>10.244.3.4</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>payment-service-5678</td>
+                  <td>payments</td>
+                  <td><span class="status-badge status-error">Error</span></td>
+                  <td>0/1</td>
+                  <td>3</td>
+                  <td>1h</td>
+                  <td>node-1</td>
+                  <td>10.244.1.5</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div class="d-flex justify-content-between align-items-center p-2 border-top">
+              <div class="text-muted small">Showing 1 to 10 of 142 entries</div>
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary"><i class="bi bi-chevron-left"></i></button>
+                <button class="btn btn-outline-secondary active">1</button>
+                <button class="btn btn-outline-secondary">2</button>
+                <button class="btn btn-outline-secondary">3</button>
+                <button class="btn btn-outline-secondary"><i class="bi bi-chevron-right"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Deployments View -->
+        <div id="deploymentsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-cpu"></i> Deployments</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createDeploymentModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshDeployments">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter deployments..." id="deploymentFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Replicas</th>
+                  <th>Up-to-date</th>
+                  <th>Available</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="deploymentsTableBody">
+                <tr>
+                  <td>nginx-deployment</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>3/3</td>
+                  <td>3</td>
+                  <td>3</td>
+                  <td>2d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML" data-bs-toggle="modal" data-bs-target="#yamlModal">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Scale">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                      <button class="action-btn" title="Rollout Restart">
+                        <i class="bi bi-arrow-repeat"></i>
+                      </button>
+                      <button class="action-btn" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>payment-service</td>
+                  <td>payments</td>
+                  <td><span class="status-badge status-error">Error</span></td>
+                  <td>1/1</td>
+                  <td>1</td>
+                  <td>0</td>
+                  <td>1h</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Scale">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>user-service</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>2/2</td>
+                  <td>2</td>
+                  <td>2</td>
+                  <td>3d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Scale">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- StatefulSets View -->
+        <div id="statefulsetsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-database"></i> StatefulSets</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createStatefulSetModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshStatefulSets">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter statefulsets..." id="statefulsetFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Replicas</th>
+                  <th>Ready</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="statefulsetsTableBody">
+                <tr>
+                  <td>redis-master</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>3/3</td>
+                  <td>3</td>
+                  <td>5d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Scale">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>elasticsearch-data</td>
+                  <td>logging</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>5/5</td>
+                  <td>5</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Scale">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- DaemonSets View -->
+        <div id="daemonsetsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-hdd-stack"></i> DaemonSets</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createDaemonSetModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshDaemonSets">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter daemonsets..." id="daemonsetFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Desired</th>
+                  <th>Current</th>
+                  <th>Ready</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="daemonsetsTableBody">
+                <tr>
+                  <td>filebeat</td>
+                  <td>kube-system</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>8</td>
+                  <td>8</td>
+                  <td>8</td>
+                  <td>1w</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>node-exporter</td>
+                  <td>monitoring</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>8</td>
+                  <td>8</td>
+                  <td>8</td>
+                  <td>3d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Jobs View -->
+        <div id="jobsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-hourglass"></i> Jobs</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshJobs">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter jobs..." id="jobFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Completions</th>
+                  <th>Duration</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobsTableBody">
+                <tr>
+                  <td>backup-job</td>
+                  <td>default</td>
+                  <td><span class="status-badge status-running">Running</span></td>
+                  <td>0/1</td>
+                  <td>2m</td>
+                  <td>2m</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>db-migration</td>
+                  <td>production</td>
+                  <td><span class="status-badge status-running">Completed</span></td>
+                  <td>1/1</td>
+                  <td>1m</td>
+                  <td>1h</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Logs">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- CronJobs View -->
+        <div id="cronjobsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-clock-history"></i> CronJobs</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createCronJobModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshCronJobs">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter cronjobs..." id="cronjobFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Schedule</th>
+                  <th>Suspend</th>
+                  <th>Active</th>
+                  <th>Last Schedule</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cronjobsTableBody">
+                <tr>
+                  <td>backup</td>
+                  <td>default</td>
+                  <td>0 0 * * *</td>
+                  <td>False</td>
+                  <td>1</td>
+                  <td>5h ago</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Trigger Now">
+                        <i class="bi bi-play"></i>
+                      </button>
+                      <button class="action-btn" title="Suspend">
+                        <i class="bi bi-pause"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>cleanup</td>
+                  <td>production</td>
+                  <td>0 3 * * *</td>
+                  <td>False</td>
+                  <td>0</td>
+                  <td>21h ago</td>
+                  <td>14d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Trigger Now">
+                        <i class="bi bi-play"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Services View -->
+        <div id="servicesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-share"></i> Services</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createServiceModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshServices">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter services..." id="serviceFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Type</th>
+                  <th>Cluster IP</th>
+                  <th>External IP</th>
+                  <th>Ports</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="servicesTableBody">
+                <tr>
+                  <td>nginx-service</td>
+                  <td>default</td>
+                  <td>ClusterIP</td>
+                  <td>10.96.123.45</td>
+                  <td>&lt;none&gt;</td>
+                  <td>80/TCP</td>
+                  <td>2d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>payment-service</td>
+                  <td>payments</td>
+                  <td>NodePort</td>
+                  <td>10.96.123.46</td>
+                  <td>&lt;none&gt;</td>
+                  <td>8080:30080/TCP</td>
+                  <td>1h</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>user-service</td>
+                  <td>default</td>
+                  <td>LoadBalancer</td>
+                  <td>10.96.123.47</td>
+                  <td>192.168.1.100</td>
+                  <td>80:30081/TCP</td>
+                  <td>3d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Ingresses View -->
+        <div id="ingressesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-box-arrow-in-down"></i> Ingresses</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createIngressModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshIngresses">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter ingresses..." id="ingressFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Hosts</th>
+                  <th>Address</th>
+                  <th>Ports</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ingressesTableBody">
+                <tr>
+                  <td>web-ingress</td>
+                  <td>default</td>
+                  <td>example.com,www.example.com</td>
+                  <td>192.168.1.100</td>
+                  <td>80, 443</td>
+                  <td>5d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>api-ingress</td>
+                  <td>production</td>
+                  <td>api.example.com</td>
+                  <td>192.168.1.101</td>
+                  <td>443</td>
+                  <td>3d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Network Policies View -->
+        <div id="networkPoliciesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-shield-lock"></i> Network Policies</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createNetworkPolicyModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshNetworkPolicies">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter network policies..." id="networkPolicyFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Pod Selector</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="networkPoliciesTableBody">
+                <tr>
+                  <td>allow-web</td>
+                  <td>default</td>
+                  <td>app=web</td>
+                  <td>2d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>deny-all</td>
+                  <td>production</td>
+                  <td>app=api</td>
+                  <td>1w</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Persistent Volumes View -->
+        <div id="persistentVolumesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-hdd"></i> Persistent Volumes</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createPersistentVolumeModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshPersistentVolumes">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter persistent volumes..." id="persistentVolumeFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Capacity</th>
+                  <th>Access Modes</th>
+                  <th>Reclaim Policy</th>
+                  <th>Status</th>
+                  <th>Claim</th>
+                  <th>Storage Class</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="persistentVolumesTableBody">
+                <tr>
+                  <td>pv-1</td>
+                  <td>10Gi</td>
+                  <td>RWO</td>
+                  <td>Retain</td>
+                  <td>Bound</td>
+                  <td>default/pvc-1</td>
+                  <td>standard</td>
+                  <td>30d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>pv-2</td>
+                  <td>50Gi</td>
+                  <td>RWX</td>
+                  <td>Delete</td>
+                  <td>Available</td>
+                  <td>&lt;none&gt;</td>
+                  <td>fast</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Persistent Volume Claims View -->
+        <div id="persistentVolumeClaimsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-folder"></i> PersistentVolumeClaims</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createPersistentVolumeClaimModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshPersistentVolumeClaims">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter PVCs..." id="persistentVolumeClaimFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Status</th>
+                  <th>Volume</th>
+                  <th>Capacity</th>
+                  <th>Access Modes</th>
+                  <th>Storage Class</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="persistentVolumeClaimsTableBody">
+                <tr>
+                  <td>pvc-1</td>
+                  <td>default</td>
+                  <td>Bound</td>
+                  <td>pv-1</td>
+                  <td>10Gi</td>
+                  <td>RWO</td>
+                  <td>standard</td>
+                  <td>30d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>data-pvc</td>
+                  <td>production</td>
+                  <td>Pending</td>
+                  <td>&lt;none&gt;</td>
+                  <td>20Gi</td>
+                  <td>RWO</td>
+                  <td>fast</td>
+                  <td>1h</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- ConfigMaps View -->
+        <div id="configMapsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-file-text"></i> ConfigMaps</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createConfigMapModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshConfigMaps">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter configmaps..." id="configMapFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Data</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="configMapsTableBody">
+                <tr>
+                  <td>app-config</td>
+                  <td>default</td>
+                  <td>3</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>env-config</td>
+                  <td>production</td>
+                  <td>5</td>
+                  <td>14d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Secrets View -->
+        <div id="secretsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-key"></i> Secrets</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createSecretModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshSecrets">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter secrets..." id="secretFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Type</th>
+                  <th>Data</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="secretsTableBody">
+                <tr>
+                  <td>db-secret</td>
+                  <td>default</td>
+                  <td>Opaque</td>
+                  <td>2</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>tls-secret</td>
+                  <td>production</td>
+                  <td>kubernetes.io/tls</td>
+                  <td>2</td>
+                  <td>14d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Roles View -->
+        <div id="rolesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-person-check"></i> Roles</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+                <i class="bi bi-plus"></i> Create
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshRoles">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter roles..." id="roleFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Age</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rolesTableBody">
+                <tr>
+                  <td>pod-reader</td>
+                  <td>default</td>
+                  <td>7d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                      <button class="action-btn" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>deployment-admin</td>
+                  <td>production</td>
+                  <td>14d</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="YAML">
+                        <i class="bi bi-code-slash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Nodes View -->
+        <div id="nodesView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-pc"></i> Nodes</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-outline-secondary" id="refreshNodes">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="dashboard-cards mb-4">
+            <div class="dashboard-card">
+              <div class="card-title">Total Nodes</div>
+              <div class="card-value">8</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Ready</div>
+              <div class="card-value">7</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Not Ready</div>
+              <div class="card-value text-danger">1</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">CPU Capacity</div>
+              <div class="card-value">64 Cores</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Memory Capacity</div>
+              <div class="card-value">256 GB</div>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Roles</th>
+                  <th>CPU</th>
+                  <th>Memory</th>
+                  <th>Pods</th>
+                  <th>Age</th>
+                  <th>Version</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="nodesTableBody">
+                <tr>
+                  <td>node-1</td>
+                  <td><span class="status-badge status-running">Ready</span></td>
+                  <td>worker</td>
+                  <td>8/8 (40%)</td>
+                  <td>12/32 GB (37%)</td>
+                  <td>18/110</td>
+                  <td>15d</td>
+                  <td>v1.25.3</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Metrics">
+                        <i class="bi bi-graph-up"></i>
+                      </button>
+                      <button class="action-btn" title="Cordon">
+                        <i class="bi bi-pause"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>node-2</td>
+                  <td><span class="status-badge status-running">Ready</span></td>
+                  <td>worker</td>
+                  <td>6/8 (30%)</td>
+                  <td>10/32 GB (31%)</td>
+                  <td>15/110</td>
+                  <td>15d</td>
+                  <td>v1.25.3</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Metrics">
+                        <i class="bi bi-graph-up"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>node-3</td>
+                  <td><span class="status-badge status-error">Not Ready</span></td>
+                  <td>worker</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>15d</td>
+                  <td>v1.25.3</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Metrics">
+                        <i class="bi bi-graph-up"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Logs Viewer -->
+        <div id="logsView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-journal-text"></i> Logs</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-outline-primary me-2" id="refreshLogs">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="downloadLogs">
+                <i class="bi bi-download"></i> Download
+              </button>
+            </div>
+          </div>
+          
+          <div class="log-viewer-container">
+            <div class="log-viewer-header">
+              <div class="flex-grow-1">
+                <label class="form-label mb-0 me-2">Pod</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: 200px;" id="logPodSelect">
+                  <option>nginx-deployment-1234</option>
+                  <option>nginx-deployment-5678</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label mb-0 me-2">Container</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: 150px;" id="logContainerSelect">
+                  <option>nginx</option>
+                </select>
+              </div>
+              <div class="form-check form-switch ms-3">
+                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                <label class="form-check-label" for="autoRefresh">Auto-refresh</label>
+              </div>
+            </div>
+            <div class="log-viewer-content" id="logContent">
+              <div>[2025-04-25 10:00:01] nginx: started worker process 1234</div>
+              <div>[2025-04-25 10:00:02] nginx: GET /api/health 200</div>
+              <div>[2025-04-25 10:00:03] nginx: GET /api/users 200</div>
+              <div>[2025-04-25 10:01:00] nginx: GET /static/css/main.css 304</div>
+              <div>[2025-04-25 10:01:01] nginx: GET /static/js/app.js 304</div>
+              <div>[2025-04-25 10:02:00] nginx: GET /api/products 200</div>
+              <div>[2025-04-25 10:02:01] nginx: GET /favicon.ico 404</div>
+              <div>[2025-04-25 10:03:00] nginx: GET /robots.txt 404</div>
+              <div>[2025-04-25 10:04:00] nginx: GET / 200</div>
+            </div>
+            <div class="log-viewer-header">
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="Filter logs..." id="logFilter">
+                <button class="btn btn-outline-secondary" type="button" id="applyLogFilter">
+                  <i class="bi bi-search"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="clearLogFilter">
+                  <i class="bi bi-x"></i> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Terminal -->
+        <div id="terminalView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-terminal"></i> Terminal</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-outline-primary me-2" id="reconnectTerminal">
+                <i class="bi bi-arrow-clockwise"></i> Reconnect
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="fullscreenTerminal">
+                <i class="bi bi-fullscreen"></i> Fullscreen
+              </button>
+            </div>
+          </div>
+          
+          <div class="terminal-container">
+            <div class="terminal-header">
+              <div class="flex-grow-1">
+                <label class="form-label mb-0 me-2">Pod</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: 200px;" id="terminalPodSelect">
+                  <option>nginx-deployment-1234</option>
+                  <option>nginx-deployment-5678</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label mb-0 me-2">Container</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: 150px;" id="terminalContainerSelect">
+                  <option>nginx</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label mb-0 me-2">Shell</label>
+                <select class="form-select form-select-sm d-inline-block" style="width: 120px;" id="terminalShellSelect">
+                  <option>/bin/sh</option>
+                  <option>/bin/bash</option>
+                </select>
+              </div>
+            </div>
+            <div class="terminal-content" id="terminalContent">
+              <div class="mb-2">$ kubectl exec -it nginx-deployment-1234 -- /bin/sh</div>
+              <div class="mb-2">/ # ls -la</div>
+              <div class="mb-2">total 12</div>
+              <div class="mb-2">drwxr-xr-x 1 root root 4096 Mar 15 12:00 .</div>
+              <div class="mb-2">drwxr-xr-x 1 root root 4096 Mar 15 12:00 ..</div>
+              <div class="mb-2">drwxr-xr-x 2 root root 4096 Mar 15 12:00 html</div>
+              <div class="mb-2">/ # cat /etc/os-release</div>
+              <div class="mb-2">PRETTY_NAME="Debian GNU/Linux 10 (buster)"</div>
+              <div class="mb-2">NAME="Debian GNU/Linux"</div>
+              <div class="mb-2">VERSION_ID="10"</div>
+              <div class="terminal-prompt">/ # _</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Port Forwarding -->
+        <div id="portForwardView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-arrow-left-right"></i> Port Forwarding</h3>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newPortForwardModal">
+              <i class="bi bi-plus"></i> New Port Forward
+            </button>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <h6 class="mb-0">Active Port Forwards</h6>
+            </div>
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Pod</th>
+                  <th>Local Port</th>
+                  <th>Pod Port</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="portForwardsTableBody">
+                <tr>
+                  <td>nginx-deployment-1234</td>
+                  <td>8080</td>
+                  <td>80</td>
+                  <td><span class="badge bg-success">Active</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-danger" data-portforward="nginx-deployment-1234:8080:80">
+                      <i class="bi bi-stop"></i> Stop
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>redis-master-0</td>
+                  <td>6379</td>
+                  <td>6379</td>
+                  <td><span class="badge bg-success">Active</span></td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-danger" data-portforward="redis-master-0:6379:6379">
+                      <i class="bi bi-stop"></i> Stop
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="plugin-panel mt-4">
+            <h5 class="mb-3">Create New Port Forward</h5>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Pod</label>
+                <select class="form-select" id="portForwardPodSelect">
+                  <option>Select a pod...</option>
+                  <option>nginx-deployment-1234</option>
+                  <option>nginx-deployment-5678</option>
+                  <option>redis-master-0</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Local Port</label>
+                <input type="number" class="form-control" placeholder="e.g. 8080" id="localPortInput">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Pod Port</label>
+                <input type="number" class="form-control" placeholder="e.g. 80" id="podPortInput">
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" id="startPortForward">
+                  <i class="bi bi-play"></i> Start
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Security Scanner View -->
+        <div id="securityScannerView" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="bi bi-shield-check"></i> Security Scanner</h3>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-primary me-2" id="runSecurityScan">
+                <i class="bi bi-shield-check"></i> Run Scan
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="refreshSecurityScan">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          
+          <div class="dashboard-cards mb-4">
+            <div class="dashboard-card">
+              <div class="card-title">Critical Vulnerabilities</div>
+              <div class="card-value text-danger">12</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">High Vulnerabilities</div>
+              <div class="card-value text-warning">24</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Medium Vulnerabilities</div>
+              <div class="card-value">36</div>
+            </div>
+            <div class="dashboard-card">
+              <div class="card-title">Low Vulnerabilities</div>
+              <div class="card-value">48</div>
+            </div>
+          </div>
+          
+          <div class="resource-table-container">
+            <div class="table-toolbar">
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active">All</button>
+                <button class="btn btn-outline-secondary">Critical</button>
+                <button class="btn btn-outline-secondary">High</button>
+                <button class="btn btn-outline-secondary">Medium</button>
+                <button class="btn btn-outline-secondary">Low</button>
+              </div>
+              <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" placeholder="Filter vulnerabilities..." id="vulnerabilityFilter">
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-funnel"></i>
+                </button>
+              </div>
+            </div>
+            
+            <table class="table table-hover resource-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Vulnerability</th>
+                  <th>Affected Resource</th>
+                  <th>Namespace</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="vulnerabilitiesTableBody">
+                <tr>
+                  <td><span class="badge bg-danger">Critical</span></td>
+                  <td>CVE-2023-1234</td>
+                  <td>nginx-deployment</td>
+                  <td>default</td>
+                  <td>Remote code execution vulnerability in nginx</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Details">
+                        <i class="bi bi-info-circle"></i>
+                      </button>
+                      <button class="action-btn" title="Remediate">
+                        <i class="bi bi-shield-plus"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge bg-warning">High</span></td>
+                  <td>CVE-2023-5678</td>
+                  <td>redis-master</td>
+                  <td>default</td>
+                  <td>Authentication bypass in Redis</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Details">
+                        <i class="bi bi-info-circle"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="badge bg-warning">High</span></td>
+                  <td>K8S-2023-001</td>
+                  <td>default service account</td>
+                  <td>default</td>
+                  <td>Default service account with excessive permissions</td>
+                  <td>
+                    <div class="action-btn-group">
+                      <button class="action-btn" title="Details">
+                        <i class="bi bi-info-circle"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Panel - Resource Details -->
+    <div class="right-panel">
+      <div class="panel-header">
+        <h5 class="mb-0">Resource Details</h5>
+        <button class="btn btn-sm btn-icon" id="closeRightPanel">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <div class="panel-content">
+        <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">
+              Details
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
+              Events
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="metrics-tab" data-bs-toggle="tab" data-bs-target="#metrics" type="button" role="tab">
+              Metrics
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content pt-3">
+          <div class="tab-pane fade show active" id="details" role="tabpanel">
+            <div class="mb-4">
+              <h6>Metadata</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-borderless">
+                  <tbody id="resourceMetadata">
+                    <tr>
+                      <td class="text-muted" style="width: 120px;">Name:</td>
+                      <td>nginx-deployment</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted">Namespace:</td>
+                      <td>default</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted">Created:</td>
+                      <td>2025-04-23 10:00:00</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted">Labels:</td>
+                      <td>
+                        <span class="badge bg-secondary">app=nginx</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted">Annotations:</td>
+                      <td>-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <h6>Status</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-borderless">
+                  <tbody id="resourceStatus">
+                    <tr>
+                      <td class="text-muted" style="width: 120px;">Replicas:</td>
+                      <td>3 desired | 3 updated | 3 total | 3 available</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted">Conditions:</td>
+                      <td>
+                        <div><span class="badge bg-success me-2">Available</span> True</div>
+                        <div><span class="badge bg-success me-2">Progressing</span> True</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div>
+              <h6>Containers</h6>
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                      <span class="badge bg-primary me-2">nginx</span>
+                      <small class="text-muted">nginx:1.14.2</small>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-outline-primary me-1">
+                        <i class="bi bi-terminal"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-journal-text"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-borderless">
+                      <tbody>
+                        <tr>
+                          <td class="text-muted" style="width: 100px;">Port:</td>
+                          <td>80/TCP</td>
+                        </tr>
+                        <tr>
+                          <td class="text-muted">Restarts:</td>
+                          <td>0</td>
+                        </tr>
+                        <tr>
+                          <td class="text-muted">Ready:</td>
+                          <td><span class="badge bg-success">True</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane fade" id="events" role="tabpanel">
+            <div class="list-group list-group-flush" id="resourceEvents">
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <span class="badge bg-info me-2">Normal</span>
+                    <small>Created pod: nginx-deployment-1234</small>
+                  </div>
+                  <small class="text-muted">2 minutes ago</small>
+                </div>
+              </div>
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <span class="badge bg-info me-2">Normal</span>
+                    <small>Started container nginx</small>
+                  </div>
+                  <small class="text-muted">2 minutes ago</small>
+                </div>
+              </div>
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <span class="badge bg-info me-2">Normal</span>
+                    <small>Created pod: nginx-deployment-5678</small>
+                  </div>
+                  <small class="text-muted">2 minutes ago</small>
+                </div>
+              </div>
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <span class="badge bg-info me-2">Normal</span>
+                    <small>Started container nginx</small>
+                  </div>
+                  <small class="text-muted">2 minutes ago</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane fade" id="metrics" role="tabpanel">
+            <div class="text-center py-4">
+              <div id="metricsVisualization" style="width:100%;height:250px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- YAML Editor Modal -->
+  <div class="modal fade" id="yamlModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit YAML</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="editor-container">
+            <div class="editor-toolbar">
+              <button class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+              <button class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-file-earmark"></i> Load from file
+              </button>
+              <div class="ms-auto">
+                <span class="badge bg-light text-dark">YAML</span>
+              </div>
+            </div>
+            <div class="editor-content yaml-editor" contenteditable="true">
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success">
+            <i class="bi bi-check"></i> Apply
+          </button>
+          <button class="btn btn-primary">
+            <i class="bi bi-eye"></i> Preview
+          </button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Pod Modal -->
+  <div class="modal fade" id="createPodModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Pod</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createPodForm">
+            <div class="mb-3">
+              <label class="form-label">Pod Name</label>
+              <input type="text" class="form-control" placeholder="my-pod" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Namespace</label>
+              <select class="form-select" required>
+                <option>default</option>
+                <option>kube-system</option>
+                <option>dev</option>
+                <option>production</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Container Image</label>
+              <input type="text" class="form-control" placeholder="nginx:latest" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Ports</label>
+              <div class="input-group mb-2">
+                <input type="number" class="form-control" placeholder="Container Port">
+                <span class="input-group-text">:</span>
+                <input type="number" class="form-control" placeholder="Host Port (optional)">
+                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-plus"></i></button>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Create</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Deployment Modal -->
+  <div class="modal fade" id="createDeploymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Deployment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createDeploymentForm">
+            <div class="mb-3">
+              <label class="form-label">Deployment Name</label>
+              <input type="text" class="form-control" placeholder="my-deployment" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Namespace</label>
+              <select class="form-select" required>
+                <option>default</option>
+                <option>kube-system</option>
+                <option>dev</option>
+                <option>production</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Replicas</label>
+              <input type="number" class="form-control" value="1" min="1">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Container Image</label>
+              <input type="text" class="form-control" placeholder="nginx:latest" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Ports</label>
+              <div class="input-group mb-2">
+                <input type="number" class="form-control" placeholder="Container Port">
+                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-plus"></i></button>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Create</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Service Modal -->
+  <div class="modal fade" id="createServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Service</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createServiceForm">
+            <div class="mb-3">
+              <label class="form-label">Service Name</label>
+              <input type="text" class="form-control" placeholder="my-service" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Namespace</label>
+              <select class="form-select" required>
+                <option>default</option>
+                <option>kube-system</option>
+                <option>dev</option>
+                <option>production</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Service Type</label>
+              <select class="form-select" required>
+                <option>ClusterIP</option>
+                <option>NodePort</option>
+                <option>LoadBalancer</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Selector</label>
+              <div class="input-group mb-2">
+                <input type="text" class="form-control" placeholder="Key">
+                <span class="input-group-text">=</span>
+                <input type="text" class="form-control" placeholder="Value">
+                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-plus"></i></button>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Ports</label>
+              <div class="input-group mb-2">
+                <input type="number" class="form-control" placeholder="Port">
+                <span class="input-group-text">:</span>
+                <input type="number" class="form-control" placeholder="Target Port">
+                <button class="btn btn-outline-secondary" type="button"><i class="bi bi-plus"></i></button>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Create</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- New Port Forward Modal -->
+  <div class="modal fade" id="newPortForwardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">New Port Forward</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="portForwardForm">
+            <div class="mb-3">
+              <label class="form-label">Pod</label>
+              <select class="form-select" required>
+                <option>Select a pod...</option>
+                <option>nginx-deployment-1234</option>
+                <option>nginx-deployment-5678</option>
+                <option>redis-master-0</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Local Port</label>
+              <input type="number" class="form-control" placeholder="e.g. 8080" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Pod Port</label>
+              <input type="number" class="form-control" placeholder="e.g. 80" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Start</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Theme toggle
+    document.querySelector('.theme-toggle').addEventListener('click', function() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      
+      // Update icon
+      const icon = this.querySelector('i');
+      icon.classList.toggle('bi-moon');
+      icon.classList.toggle('bi-sun');
+      
+      // Save preference to localStorage
+      localStorage.setItem('theme', newTheme);
+    });
+
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if (savedTheme === 'light') {
+      const icon = document.querySelector('.theme-toggle i');
+      icon.classList.remove('bi-moon');
+      icon.classList.add('bi-sun');
+    }
+
+    // Login handler
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const loginBtn = document.getElementById('loginBtn');
+      const btnText = loginBtn.querySelector('.btn-text');
+      const spinner = loginBtn.querySelector('.loading-spinner');
+      
+      // Show loading state
+      btnText.style.display = 'none';
+      spinner.style.display = 'inline-block';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Hide login modal and show app
+        document.querySelector('.auth-modal').style.display = 'none';
+        document.querySelector('.app-container').style.display = 'flex';
+        
+        // Initialize dashboard
+        initializeDashboard();
+        
+        // Reset login button
+        btnText.style.display = 'inline-block';
+        spinner.style.display = 'none';
+      }, 1500);
+    });
+
+    // Logout handler
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelector('.auth-modal').style.display = 'flex';
+      document.querySelector('.app-container').style.display = 'none';
+      
+      // Clear form
+      document.querySelector('.auth-card input[type="text"]').value = '';
+      document.querySelector('.auth-card input[type="password"]').value = '';
+    });
+
+    // View switching
+    document.querySelectorAll('.sidebar .nav-item[data-view]').forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.sidebar .nav-item').forEach(t => t.classList.remove('active'));
+        
+        // Add active class to clicked tab
+        this.classList.add('active');
+        
+        // Hide all views
+        document.querySelectorAll('.view-container > div').forEach(view => {
+          view.style.display = 'none';
+        });
+        
+        // Show selected view
+        const viewId = this.getAttribute('data-view');
+        if (document.getElementById(viewId)) {
+          document.getElementById(viewId).style.display = 'block';
+          
+          // Initialize view if needed
+          if (viewId === 'dashboardView') initializeDashboard();
+          if (viewId === 'podsView') initializePodsView();
+          if (viewId === 'deploymentsView') initializeDeploymentsView();
+          if (viewId === 'servicesView') initializeServicesView();
+          if (viewId === 'logsView') initializeLogsView();
+          if (viewId === 'terminalView') initializeTerminalView();
+          if (viewId === 'portForwardView') initializePortForwardView();
+          if (viewId === 'nodesView') initializeNodesView();
+          if (viewId === 'securityScannerView') initializeSecurityScannerView();
+        }
+      });
+    });
+    
+    // Cluster and namespace selection
+    document.getElementById('clusterSelect').addEventListener('change', function() {
+      const cluster = this.value;
+      document.getElementById('currentCluster').textContent = cluster;
+      // In a real app, we would fetch data for the selected cluster
+    });
+    
+    document.getElementById('namespaceSelect').addEventListener('change', function() {
+      const namespace = this.value;
+      document.getElementById('currentNamespace').textContent = namespace;
+      // In a real app, we would filter resources by namespace
+    });
+    
+    // Close right panel
+    document.getElementById('closeRightPanel').addEventListener('click', function() {
+      document.querySelector('.right-panel').style.display = 'none';
+    });
+    
+    // Show resource details when clicking on a row
+    document.querySelectorAll('#podsTableBody tr, #deploymentsTableBody tr, #servicesTableBody tr').forEach(row => {
+      row.addEventListener('click', function(e) {
+        // Don't show details if clicking on an action button
+        if (!e.target.closest('.action-btn')) {
+          document.querySelector('.right-panel').style.display = 'flex';
+        }
+      });
+    });
+    
+    // Initialize dashboard
+    function initializeDashboard() {
+      // Initialize resource graph
+      const ctx = document.createElement('canvas');
+      document.getElementById('graphVisualization').appendChild(ctx);
+      
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Running', 'Pending', 'Failed', 'Unknown'],
+          datasets: [{
+            data: [120, 15, 7, 0],
+            backgroundColor: [
+              '#4caf50',
+              '#ff9800',
+              '#f44336',
+              '#9e9e9e'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+      
+      // Initialize metrics visualization in right panel
+      const metricsCtx = document.createElement('canvas');
+      document.getElementById('metricsVisualization').appendChild(metricsCtx);
+      
+      new Chart(metricsCtx, {
+        type: 'line',
+        data: {
+          labels: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '10m'],
+          datasets: [
+            {
+              label: 'CPU Usage %',
+              data: [25, 30, 28, 35, 40, 38, 42, 45, 43, 40],
+              borderColor: '#4361ee',
+              backgroundColor: 'rgba(67, 97, 238, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Memory Usage %',
+              data: [45, 50, 48, 55, 60, 58, 62, 65, 63, 60],
+              borderColor: '#4cc9f0',
+              backgroundColor: 'rgba(76, 201, 240, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+      
+      // Refresh dashboard button
+      document.getElementById('refreshDashboard').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+      
+      // View all events button
+      document.getElementById('viewAllEvents').addEventListener('click', function() {
+        // In a real app, this would navigate to the events view
+        alert('Navigating to all events view');
+      });
+    }
+    
+    // Initialize pods view
+    function initializePodsView() {
+      // Refresh pods button
+      document.getElementById('refreshPods').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+      
+      // Pod filter
+      document.getElementById('podFilter').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#podsTableBody tr');
+        
+        rows.forEach(row => {
+          const name = row.querySelector('td').textContent.toLowerCase();
+          if (name.includes(filter)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+      
+      // Action buttons for pods
+      document.querySelectorAll('#podsTableBody .action-btn[data-pod]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const pod = this.getAttribute('data-pod');
+          const action = this.getAttribute('title');
+          
+          if (action === 'Logs') {
+            // Switch to logs view with this pod selected
+            document.querySelector('.nav-item[data-view="logsView"]').click();
+            document.getElementById('logPodSelect').value = pod;
+          } else if (action === 'Terminal') {
+            // Switch to terminal view with this pod selected
+            document.querySelector('.nav-item[data-view="terminalView"]').click();
+            document.getElementById('terminalPodSelect').value = pod;
+          } else if (action === 'Delete') {
+            if (confirm(`Are you sure you want to delete pod ${pod}?`)) {
+              // Simulate delete
+              const row = this.closest('tr');
+              row.style.opacity = '0.5';
+              setTimeout(() => {
+                row.remove();
+              }, 1000);
+            }
+          }
+        });
+      });
+    }
+    
+    // Initialize deployments view
+    function initializeDeploymentsView() {
+      // Refresh deployments button
+      document.getElementById('refreshDeployments').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+      
+      // Deployment filter
+      document.getElementById('deploymentFilter').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#deploymentsTableBody tr');
+        
+        rows.forEach(row => {
+          const name = row.querySelector('td').textContent.toLowerCase();
+          if (name.includes(filter)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+    
+    // Initialize services view
+    function initializeServicesView() {
+      // Refresh services button
+      document.getElementById('refreshServices').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+      
+      // Service filter
+      document.getElementById('serviceFilter').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#servicesTableBody tr');
+        
+        rows.forEach(row => {
+          const name = row.querySelector('td').textContent.toLowerCase();
+          if (name.includes(filter)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+    
+    // Initialize logs view
+    function initializeLogsView() {
+      // Refresh logs button
+      document.getElementById('refreshLogs').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+          // Add new log entries
+          const logContent = document.getElementById('logContent');
+          const newLog = document.createElement('div');
+          newLog.textContent = `[${new Date().toISOString()}] Log refresh simulated`;
+          logContent.appendChild(newLog);
+          logContent.scrollTop = logContent.scrollHeight;
+        }, 1000);
+      });
+      
+      // Download logs button
+      document.getElementById('downloadLogs').addEventListener('click', function() {
+        const pod = document.getElementById('logPodSelect').value;
+        const container = document.getElementById('logContainerSelect').value;
+        alert(`Downloading logs for ${container} in ${pod}`);
+      });
+      
+      // Log filter
+      document.getElementById('applyLogFilter').addEventListener('click', function() {
+        const filter = document.getElementById('logFilter').value.toLowerCase();
+        const logLines = document.querySelectorAll('#logContent div');
+        
+        logLines.forEach(line => {
+          if (line.textContent.toLowerCase().includes(filter)) {
+            line.style.display = '';
+          } else {
+            line.style.display = 'none';
+          }
+        });
+      });
+      
+      // Clear log filter
+      document.getElementById('clearLogFilter').addEventListener('click', function() {
+        document.getElementById('logFilter').value = '';
+        document.querySelectorAll('#logContent div').forEach(line => {
+          line.style.display = '';
+        });
+      });
+      
+      // Auto-refresh toggle
+      document.getElementById('autoRefresh').addEventListener('change', function() {
+        if (this.checked) {
+          alert('Auto-refresh enabled');
+        } else {
+          alert('Auto-refresh disabled');
+        }
+      });
+    }
+    
+    // Initialize terminal view
+    function initializeTerminalView() {
+      // Reconnect terminal button
+      document.getElementById('reconnectTerminal').addEventListener('click', function() {
+        // Simulate reconnect
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+          const terminalContent = document.getElementById('terminalContent');
+          const newLine = document.createElement('div');
+          newLine.className = 'mb-2';
+          newLine.textContent = '$ Reconnected to terminal session';
+          terminalContent.appendChild(newLine);
+          terminalContent.scrollTop = terminalContent.scrollHeight;
+        }, 1000);
+      });
+      
+      // Fullscreen terminal button
+      document.getElementById('fullscreenTerminal').addEventListener('click', function() {
+        const terminalContainer = document.querySelector('.terminal-container');
+        if (terminalContainer.classList.contains('fullscreen')) {
+          terminalContainer.classList.remove('fullscreen');
+          this.innerHTML = '<i class="bi bi-fullscreen"></i> Fullscreen';
+        } else {
+          terminalContainer.classList.add('fullscreen');
+          this.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Exit Fullscreen';
+        }
+      });
+    }
+    
+    // Initialize port forwarding view
+    function initializePortForwardView() {
+      // Start port forward button
+      document.getElementById('startPortForward').addEventListener('click', function() {
+        const pod = document.getElementById('portForwardPodSelect').value;
+        const localPort = document.getElementById('localPortInput').value;
+        const podPort = document.getElementById('podPortInput').value;
+        
+        if (!pod || pod === 'Select a pod...') {
+          alert('Please select a pod');
+          return;
+        }
+        
+        if (!localPort || !podPort) {
+          alert('Please enter both local and pod ports');
+          return;
+        }
+        
+        // Add to active port forwards table
+        const tableBody = document.getElementById('portForwardsTableBody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+          <td>${pod}</td>
+          <td>${localPort}</td>
+          <td>${podPort}</td>
+          <td><span class="badge bg-success">Active</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" data-portforward="${pod}:${localPort}:${podPort}">
+              <i class="bi bi-stop"></i> Stop
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(newRow);
+        
+        // Add event listener to new stop button
+        newRow.querySelector('button').addEventListener('click', function() {
+          stopPortForward(this);
+        });
+        
+        alert(`Port forward started: localhost:${localPort} → ${pod}:${podPort}`);
+      });
+      
+      // Stop port forward buttons
+      document.querySelectorAll('[data-portforward]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          stopPortForward(this);
+        });
+      });
+      
+      function stopPortForward(button) {
+        const portForward = button.getAttribute('data-portforward');
+        if (confirm(`Stop port forward ${portForward}?`)) {
+          const row = button.closest('tr');
+          row.style.opacity = '0.5';
+          setTimeout(() => {
+            row.remove();
+          }, 1000);
+        }
+      }
+    }
+    
+    // Initialize nodes view
+    function initializeNodesView() {
+      // Refresh nodes button
+      document.getElementById('refreshNodes').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+    }
+    
+    // Initialize security scanner view
+    function initializeSecurityScannerView() {
+      // Run scan button
+      document.getElementById('runSecurityScan').addEventListener('click', function() {
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-shield-check spin';
+        this.disabled = true;
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+          this.disabled = false;
+          
+          // Simulate scan results
+          const tableBody = document.getElementById('vulnerabilitiesTableBody');
+          const newRow = document.createElement('tr');
+          newRow.innerHTML = `
+            <td><span class="badge bg-warning">High</span></td>
+            <td>CVE-2025-${Math.floor(Math.random() * 10000)}</td>
+            <td>New vulnerability</td>
+            <td>default</td>
+            <td>Newly discovered security issue</td>
+            <td>
+              <div class="action-btn-group">
+                <button class="action-btn" title="Details">
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </div>
+            </td>
+          `;
+          tableBody.prepend(newRow);
+          
+          alert('Security scan completed');
+        }, 3000);
+      });
+      
+      // Refresh scan button
+      document.getElementById('refreshSecurityScan').addEventListener('click', function() {
+        // Simulate refresh
+        const spinner = this.querySelector('i');
+        const originalClass = spinner.className;
+        spinner.className = 'bi bi-arrow-clockwise spin';
+        
+        setTimeout(() => {
+          spinner.className = originalClass;
+        }, 1000);
+      });
+      
+      // Vulnerability filter
+      document.getElementById('vulnerabilityFilter').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#vulnerabilitiesTableBody tr');
+        
+        rows.forEach(row => {
+          const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+          const desc = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+          if (name.includes(filter) || desc.includes(filter)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Initialize popovers
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.map(function (popoverTriggerEl) {
+      return new bootstrap.Popover(popoverTriggerEl);
+    });
+  </script>
+</body>
+</html>

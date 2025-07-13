@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: kubenexus
+data:
+  01-init.sql: |
+    -- KubeNexus Database Schema
+    -- This will be automatically executed when PostgreSQL starts
+    
+    -- Users and Authentication
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        is_admin BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP,
+        failed_login_attempts INTEGER DEFAULT 0,
+        account_locked_until TIMESTAMP
+    );
+    
+    -- Roles and Permissions
+    CREATE TABLE IF NOT EXISTS roles (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        permissions JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE TABLE IF NOT EXISTS user_roles (
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, role_id)
+    );
+    
+    -- Cluster Management
+    CREATE TABLE IF NOT EXISTS clusters (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        provider VARCHAR(100) NOT NULL,
+        region VARCHAR(100),
+        version VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'pending',
+        kubeconfig_encrypted TEXT,
+        endpoint_url VARCHAR(500),
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metadata JSONB
+    );
+    
+    -- Audit Logging
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(100),
+        resource_id VARCHAR(255),
+        details JSONB,
+        ip_address INET,
+        user_agent TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        success BOOLEAN DEFAULT true,
+        error_message TEXT
+    );
+    
+    -- SRE and Monitoring
+    CREATE TABLE IF NOT EXISTS sre_problems (
+        id SERIAL PRIMARY KEY,
+        cluster_id INTEGER REFERENCES clusters(id),
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        severity VARCHAR(50) DEFAULT 'medium',
+        status VARCHAR(50) DEFAULT 'open',
+        category VARCHAR(100),
+        detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP,
+        assigned_to INTEGER REFERENCES users(id),
+        root_cause TEXT,
+        resolution TEXT,
+        metadata JSONB
+    );
+    
+    CREATE TABLE IF NOT EXISTS sre_recommendations (
+        id SERIAL PRIMARY KEY,
+        cluster_id INTEGER REFERENCES clusters(id),
+        problem_id INTEGER REFERENCES sre_problems(id),
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100),
+        priority VARCHAR(50) DEFAULT 'medium',
+        confidence_score DECIMAL(3,2),
+        implementation_steps JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        implemented BOOLEAN DEFAULT false,
+        implemented_at TIMESTAMP,
+        feedback_rating INTEGER CHECK (feedback_rating >= 1 AND feedback_rating <= 5),
+        feedback_comment TEXT
+    );
+    
+    -- Metrics and Performance
+    CREATE TABLE IF NOT EXISTS cluster_metrics (
+        id SERIAL PRIMARY KEY,
+        cluster_id INTEGER REFERENCES clusters(id),
+        metric_name VARCHAR(100) NOT NULL,
+        metric_value DECIMAL,
+        metric_unit VARCHAR(50),
+        collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metadata JSONB
+    );
+    
+    -- Sessions and Security
+    CREATE TABLE IF NOT EXISTS user_sessions (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        ip_address INET,
+        user_agent TEXT,
+        is_active BOOLEAN DEFAULT true
+    );
+    
+    -- API Keys and Tokens
+    CREATE TABLE IF NOT EXISTS api_keys (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        key_hash VARCHAR(255) UNIQUE NOT NULL,
+        key_prefix VARCHAR(20) NOT NULL,
+        permissions JSONB,
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_used_at TIMESTAMP,
+        is_active BOOLEAN DEFAULT true
+    );
+    
+    -- Indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+    CREATE INDEX IF NOT EXISTS idx_clusters_created_by ON clusters(created_by);
+    CREATE INDEX IF NOT EXISTS idx_clusters_status ON clusters(status);
+    CREATE INDEX IF NOT EXISTS idx_sre_problems_cluster_id ON sre_problems(cluster_id);
+    CREATE INDEX IF NOT EXISTS idx_sre_problems_status ON sre_problems(status);
+    CREATE INDEX IF NOT EXISTS idx_sre_recommendations_cluster_id ON sre_recommendations(cluster_id);
+    CREATE INDEX IF NOT EXISTS idx_cluster_metrics_cluster_id ON cluster_metrics(cluster_id);
+    CREATE INDEX IF NOT EXISTS idx_cluster_metrics_collected_at ON cluster_metrics(collected_at);
+    CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
+    
+    -- Insert default admin user (password: admin123!)
+    INSERT INTO users (username, email, password_hash, full_name, is_admin) 
+    VALUES ('admin', 'admin@kubenexus.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6jJA7kOHtq', 'System Administrator', true)
+    ON CONFLICT (username) DO NOTHING;
+    
+    -- Insert default roles
+    INSERT INTO roles (name, description, permissions) VALUES 
+    ('admin', 'Full system access', '{"all": true}'),
+    ('cluster_admin', 'Cluster management access', '{"clusters": ["read", "write", "delete"], "monitoring": ["read"]}'),
+    ('developer', 'Development access', '{"clusters": ["read"], "monitoring": ["read"], "terminal": ["read"]}'),
+    ('viewer', 'Read-only access', '{"clusters": ["read"], "monitoring": ["read"]}')
+    ON CONFLICT (name) DO NOTHING;
+    
+    -- Assign admin role to admin user
+    INSERT INTO user_roles (user_id, role_id) 
+    SELECT u.id, r.id FROM users u, roles r 
+    WHERE u.username = 'admin' AND r.name = 'admin'
+    ON CONFLICT DO NOTHING; 

@@ -1,0 +1,267 @@
+version: '3.8'
+
+services:
+  # Database Services
+  postgres:
+    image: postgres:16-alpine
+    container_name: kn-postgres
+    environment:
+      POSTGRES_DB: kubenexus
+      POSTGRES_USER: kubenexus_user
+      POSTGRES_PASSWORD: your_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kubenexus_user -d kubenexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: kn-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Services
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: services/auth-service/Dockerfile
+    container_name: kn-auth-service
+    environment:
+      DATABASE_URL: postgresql://kubenexus_user:your_secure_password@postgres:5432/kubenexus
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: super_secret_jwt_key_change_in_production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: 60
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cluster-manager-service:
+    build:
+      context: ./backend
+      dockerfile: services/cluster-manager-service/Dockerfile
+    container_name: kn-cluster-manager-service
+    environment:
+      DATABASE_URL: postgresql://kubenexus_user:your_secure_password@postgres:5432/kubenexus
+      KUBECONFIG_ENCRYPTION_KEY: 32_char_encryption_key_here_123456
+      CLOUD_PROVIDER_ENCRYPTION_KEY: another_32_char_key_for_cloud_123
+      AUTH_SERVICE_URL: http://auth-service:8000
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  audit-log-service:
+    build:
+      context: ./backend
+      dockerfile: services/audit-log-service/Dockerfile
+    container_name: kn-audit-log-service
+    environment:
+      DATABASE_URL: postgresql://kubenexus_user:your_secure_password@postgres:5432/kubenexus
+      AUTH_SERVICE_URL: http://auth-service:8000
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  metrics-service:
+    build:
+      context: ./backend
+      dockerfile: services/metrics-service/Dockerfile
+    container_name: kn-metrics-service
+    environment:
+      DATABASE_URL: postgresql://kubenexus_user:your_secure_password@postgres:5432/kubenexus
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:8000
+      CLUSTER_MANAGER_SERVICE_URL: http://cluster-manager-service:8001
+      LOG_LEVEL: INFO
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      cluster-manager-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  terminal-service:
+    build:
+      context: ./backend
+      dockerfile: services/terminal-service/Dockerfile
+    container_name: kn-terminal-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      CLUSTER_MANAGER_SERVICE_URL: http://cluster-manager-service:8001
+      LOG_LEVEL: INFO
+    ports:
+      - "8005:8005"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      cluster-manager-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  sre-agent-service:
+    build:
+      context: ./backend
+      dockerfile: services/sre-agent-service/Dockerfile
+    container_name: kn-sre-agent-service
+    environment:
+      DATABASE_URL: postgresql://kubenexus_user:your_secure_password@postgres:5432/kubenexus
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:8000
+      CLUSTER_MANAGER_SERVICE_URL: http://cluster-manager-service:8001
+      METRICS_SERVICE_URL: http://metrics-service:8004
+      SRE_MONITORING_INTERVAL_SECONDS: 60
+      SRE_ANOMALY_DETECTION_THRESHOLD: 0.8
+      SRE_MAX_SUGGESTIONS_PER_PROBLEM: 5
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      cluster-manager-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: kn-api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8000
+      CLUSTER_MANAGER_SERVICE_URL: http://cluster-manager-service:8001
+      SRE_AGENT_SERVICE_URL: http://sre-agent-service:8002
+      AUDIT_LOG_SERVICE_URL: http://audit-log-service:8003
+      METRICS_SERVICE_URL: http://metrics-service:8004
+      TERMINAL_SERVICE_URL: http://terminal-service:8005
+      JWT_SECRET: super_secret_jwt_key_change_in_production
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000", "http://localhost:80"]'
+      LOG_LEVEL: INFO
+    ports:
+      - "80:80"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      cluster-manager-service:
+        condition: service_healthy
+      audit-log-service:
+        condition: service_healthy
+      metrics-service:
+        condition: service_healthy
+      terminal-service:
+        condition: service_healthy
+      sre-agent-service:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kn-frontend
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - kubenexus-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  kubenexus-net:
+    driver: bridge 

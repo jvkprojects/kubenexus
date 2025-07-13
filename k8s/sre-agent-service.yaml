@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sre-models-pvc
+  namespace: kubenexus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-agent-service
+  namespace: kubenexus
+  labels:
+    app: sre-agent-service
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sre-agent-service
+  template:
+    metadata:
+      labels:
+        app: sre-agent-service
+        component: backend
+    spec:
+      imagePullSecrets:
+      - name: kubenexus-registry-secret
+      containers:
+      - name: sre-agent-service
+        image: kubenexus/sre-agent-service:latest
+        ports:
+        - containerPort: 8005
+        env:
+        - name: PORT
+          value: "8005"
+        envFrom:
+        - configMapRef:
+            name: kubenexus-config
+        - secretRef:
+            name: kubenexus-secrets
+        volumeMounts:
+        - name: models-storage
+          mountPath: /models
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8005
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: models-storage
+        persistentVolumeClaim:
+          claimName: sre-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sre-agent-service
+  namespace: kubenexus
+  labels:
+    app: sre-agent-service
+    component: backend
+spec:
+  selector:
+    app: sre-agent-service
+  ports:
+  - port: 8005
+    targetPort: 8005
+  type: ClusterIP 

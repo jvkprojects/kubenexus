@@ -1,0 +1,85 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubenexus-ingress
+  namespace: kubenexus
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/websocket-services: "terminal-service"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - kubenexus.example.com
+    - api.kubenexus.example.com
+    secretName: kubenexus-tls
+  rules:
+  - host: kubenexus.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+  - host: api.kubenexus.example.com
+    http:
+      paths:
+      # API Gateway (main entry point)
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8000
+      # Direct service access (for debugging/admin)
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8001
+      - path: /clusters
+        pathType: Prefix
+        backend:
+          service:
+            name: cluster-manager-service
+            port:
+              number: 8002
+      - path: /audit
+        pathType: Prefix
+        backend:
+          service:
+            name: audit-log-service
+            port:
+              number: 8003
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: metrics-service
+            port:
+              number: 8004
+      - path: /sre
+        pathType: Prefix
+        backend:
+          service:
+            name: sre-agent-service
+            port:
+              number: 8005
+      - path: /terminal
+        pathType: Prefix
+        backend:
+          service:
+            name: terminal-service
+            port:
+              number: 8006 

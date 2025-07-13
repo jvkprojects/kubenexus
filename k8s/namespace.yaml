@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubenexus
+  labels:
+    name: kubenexus
+    app: kubenexus-platform 

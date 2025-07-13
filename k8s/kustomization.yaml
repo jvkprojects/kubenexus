@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kubenexus
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - postgres-init-configmap.yaml
+  - postgres.yaml
+  - redis.yaml
+  - auth-service.yaml
+  - cluster-manager-service.yaml
+  - api-gateway.yaml
+  - sre-agent-service.yaml
+  - audit-log-service.yaml
+  - metrics-service.yaml
+  - terminal-service.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+images:
+  - name: kubenexus/auth-service
+    newTag: v1.0.0
+  - name: kubenexus/cluster-manager-service
+    newTag: v1.0.0
+  - name: kubenexus/api-gateway
+    newTag: v1.0.0
+  - name: kubenexus/sre-agent-service
+    newTag: v1.0.0
+  - name: kubenexus/audit-log-service
+    newTag: v1.0.0
+  - name: kubenexus/metrics-service
+    newTag: v1.0.0
+  - name: kubenexus/terminal-service
+    newTag: v1.0.0
+  - name: kubenexus/frontend
+    newTag: v1.0.0
+
+commonLabels:
+  app.kubernetes.io/name: kubenexus
+  app.kubernetes.io/version: v1.0.0
+  app.kubernetes.io/managed-by: kustomize
+
+replicas:
+  - name: auth-service
+    count: 2
+  - name: cluster-manager-service
+    count: 2
+  - name: api-gateway
+    count: 3
+  - name: sre-agent-service
+    count: 2
+  - name: audit-log-service
+    count: 2
+  - name: metrics-service
+    count: 2
+  - name: terminal-service
+    count: 2
+  - name: frontend
+    count: 3 

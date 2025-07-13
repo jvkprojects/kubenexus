@@ -1,0 +1,6 @@
+# .gitattributes
+* text=auto  # Automatically detect and normalize text files to LF in the repo, but use native endings locally
+*.bat text eol=crlf  # Force CRLF for Windows batch files (if needed)
+*.sh text eol=lf     # Force LF for shell scripts (if needed)
+# Add more patterns as needed, e.g., for binaries: *.png binary
+

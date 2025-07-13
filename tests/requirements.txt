@@ -1,0 +1,66 @@
+# Core testing framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.5.0
+
+# Test data generation
+factory-boy==3.3.0
+faker==20.1.0
+
+# HTTP testing
+httpx==0.25.2
+requests-mock==1.11.0
+
+# Database testing
+pytest-postgresql==5.0.0
+pytest-redis==3.0.2
+testcontainers==3.7.1
+
+# Mocking and fixtures
+responses==0.24.1
+freezegun==1.2.2
+unittest-mock==1.0.1
+
+# Async testing
+asynctest==0.13.0
+aioresponses==0.7.4
+
+# Performance testing
+locust==2.17.0
+pytest-benchmark==4.0.0
+
+# Code quality
+flake8==6.1.0
+black==23.11.0
+isort==5.12.0
+mypy==1.7.1
+
+# Security testing
+bandit==1.7.5
+safety==2.3.5
+
+# API testing
+pytest-httpserver==1.0.8
+jsonschema==4.20.0
+
+# Kubernetes testing
+kubernetes==28.1.0
+pykube-ng==22.9.0
+
+# Documentation testing
+pytest-doctestplus==1.0.0
+
+# Test reporting
+pytest-html==4.1.1
+pytest-json-report==1.5.0
+allure-pytest==2.13.2
+
+# Load testing dependencies
+locustio==1.6.0
+grpcio-tools==1.59.3
+
+# Browser automation (for integration with Selenium if needed)
+selenium==4.15.2
+webdriver-manager==4.0.1 
